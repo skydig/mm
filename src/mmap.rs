@@ -72,7 +72,7 @@ pub fn ioremap32_read(addr:u32)->Result<u32,String> {
 
     unsafe {
         #[cfg(any(target_arch = "aarch64", target_arch="x86_64"))]
-        let vaddr = libc::mmap(0 as *mut c_void, (ofst+len) as usize,libc::PROT_READ|libc::PROT_WRITE,libc::MAP_SHARED, *MEM_FD, page as i64);
+        let vaddr = libc::mmap64(0 as *mut c_void, (ofst+len) as usize,libc::PROT_READ|libc::PROT_WRITE,libc::MAP_SHARED, *MEM_FD, page as i64);
         #[cfg(target_arch = "powerpc")]
         let vaddr = libc::mmap(0 as *mut c_void, (ofst+len) as usize,libc::PROT_READ|libc::PROT_WRITE,libc::MAP_SHARED, *MEM_FD, page as i32);
         let mapped = std::slice::from_raw_parts_mut(vaddr as *mut u8, len as usize+ofst as usize);
@@ -91,8 +91,12 @@ pub fn ioremap32_read(addr:u32)->Result<u32,String> {
 #[test] fn basic_test() {
     ioremap(0x1004);
 }
-
-pub fn ioremap(addr:u32)->Result<*mut c_void,String> {
+pub fn iounmap(addr:* mut c_void, ofst:u32, len:u32) {
+    unsafe {
+      libc::munmap(addr,(ofst+len) as usize);
+    }
+}
+pub fn ioremap(addr:u32)->Result<(*mut c_void,u32),String> {
     if *MEM_FD < 0 {
         return Err("handle of /dev/mem is wrong".to_owned());
     }
@@ -103,10 +107,10 @@ pub fn ioremap(addr:u32)->Result<*mut c_void,String> {
 
     unsafe {
         #[cfg(any(target_arch = "aarch64", target_arch="x86_64"))]
-        let mut vaddr = libc::mmap(0 as *mut c_void, (ofst+len) as usize,libc::PROT_READ|libc::PROT_WRITE,libc::MAP_SHARED, *MEM_FD, page as i64);
+        let mut vaddr = libc::mmap64(0 as *mut c_void, (ofst+len) as usize,libc::PROT_READ|libc::PROT_WRITE,libc::MAP_SHARED, *MEM_FD, page as i64);
         #[cfg(target_arch = "powerpc")]
         let vaddr = libc::mmap(0 as *mut c_void, (ofst+len) as usize,libc::PROT_READ|libc::PROT_WRITE,libc::MAP_SHARED, fd, page as i32);
         vaddr = vaddr.add(ofst as usize);
-        return Ok(vaddr);
+        return Ok((vaddr,ofst));
     }
 }
