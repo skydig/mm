@@ -18,17 +18,26 @@ lazy_static! {
     pub static ref MEM_FD:i32 = open_mem();
 }
 
-pub fn ioremap32_read_le(addr:u32)->Result<u32,String> {
+pub fn ioremap32_read_swap(addr:u32)->Result<u32,String> {
     if let Ok(res) = ioremap32_read(addr) {
-        Ok(res.to_le())
+        if cfg!(target_endian = "big") {
+            Ok(res.to_le())
+        } else {
+            Ok(res.to_be())
+        }
     } else {
         Err("error to perform mmap read".to_owned())
     }
 }
 
-pub fn ioremap32_write_le(addr:u32, write_val:u32)->Result<(),String>{
-    let le = write_val.to_le();
-    if  let Ok(()) = ioremap32_write(addr, le) {
+pub fn ioremap32_write_swap(addr:u32, write_val:u32)->Result<(),String>{
+    let sw;
+    if cfg!(target_endian = "big") {
+            sw = write_val.to_le();
+    } else {
+            sw = write_val.to_be();
+    }
+    if  let Ok(()) = ioremap32_write(addr, sw) {
         Ok(())
     } else {
         Err("error to perform mmap write".to_owned())
@@ -53,9 +62,9 @@ pub fn ioremap32_write(addr:u32, write_val:u32)->Result<(),String>{
         
         let v = write_val.to_be_bytes().to_vec();
         mapped[ofst as usize]=v[0];
-        mapped[ofst as usize+1]=v[0];
-        mapped[ofst as usize+2]=v[0];
-        mapped[ofst as usize+3]=v[0];
+        mapped[ofst as usize+1]=v[1];
+        mapped[ofst as usize+2]=v[2];
+        mapped[ofst as usize+3]=v[3];
         libc::munmap(vaddr,(ofst+len) as usize);
         Ok(())
     }
@@ -90,6 +99,12 @@ pub fn ioremap32_read(addr:u32)->Result<u32,String> {
 }
 #[test] fn basic_test() {
     ioremap(0x1004);
+    println!("{:x}",ioremap32_read(0x10).unwrap());
+    println!("{:x}",ioremap32_read_swap(0x10).unwrap());
+    ioremap32_write_swap(0x10, 0xf000ff52);
+    println!("{:x}",ioremap32_read_swap(0x10).unwrap());
+    ioremap32_write(0x10, 0x53ff00f0);
+    println!("{:x}",ioremap32_read_swap(0x10).unwrap());
 }
 pub fn iounmap(addr:* mut c_void, ofst:u32, len:u32) {
     unsafe {
