@@ -124,7 +124,7 @@ pub fn ioremap(addr:u32)->Result<(*mut c_void,u32),String> {
         #[cfg(any(target_arch = "aarch64", target_arch="x86_64"))]
         let mut vaddr = libc::mmap64(0 as *mut c_void, (ofst+len) as usize,libc::PROT_READ|libc::PROT_WRITE,libc::MAP_SHARED, *MEM_FD, page as i64);
         #[cfg(target_arch = "powerpc")]
-        let vaddr = libc::mmap(0 as *mut c_void, (ofst+len) as usize,libc::PROT_READ|libc::PROT_WRITE,libc::MAP_SHARED, *MEM_FD, page as i32);
+        let mut vaddr = libc::mmap(0 as *mut c_void, (ofst+len) as usize,libc::PROT_READ|libc::PROT_WRITE,libc::MAP_SHARED, *MEM_FD, page as i32);
         vaddr = vaddr.add(ofst as usize);
         return Ok((vaddr,ofst));
     }
