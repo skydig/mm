@@ -55,7 +55,7 @@ pub fn ioremap32_write(addr:u32, write_val:u32)->Result<(),String>{
 
     unsafe {
         #[cfg(any(target_arch = "aarch64", target_arch="x86_64"))]
-        let vaddr = libc::mmap(0 as *mut c_void, (ofst+len) as usize,libc::PROT_READ|libc::PROT_WRITE,libc::MAP_SHARED, *MEM_FD, page as i64);
+        let vaddr = libc::mmap64(0 as *mut c_void, (ofst+len) as usize,libc::PROT_READ|libc::PROT_WRITE,libc::MAP_SHARED, *MEM_FD, page as i64);
         #[cfg(target_arch = "powerpc")]
         let vaddr = libc::mmap(0 as *mut c_void, (ofst+len) as usize,libc::PROT_READ|libc::PROT_WRITE,libc::MAP_SHARED, *MEM_FD, page as i32);
         let mapped = std::slice::from_raw_parts_mut(vaddr as *mut u8, len as usize+ofst as usize);
